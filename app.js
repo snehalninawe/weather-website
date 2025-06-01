@@ -7,7 +7,7 @@ const searchForm = document.querySelector("[data-searchForm]");
 const loadingScreen = document.querySelector(".loading-container");
 const userInfoContainer = document.querySelector(".user-info-container");
 
-//initially vairables need????
+
 
 let oldTab = userTab;
 const API_KEY = "d1845658f92b31c64bd94f06f7188c9c";
@@ -21,37 +21,32 @@ function switchTab(newTab) {
         oldTab.classList.add("current-tab");
 
         if(!searchForm.classList.contains("active")) {
-            //kya search form wala container is invisible, if yes then make it visible
             userInfoContainer.classList.remove("active");
             grantAccessContainer.classList.remove("active");
             searchForm.classList.add("active");
         }
         else {
-            //main pehle search wale tab pr tha, ab your weather tab visible karna h 
             searchForm.classList.remove("active");
             userInfoContainer.classList.remove("active");
-            //ab main your weather tab me aagya hu, toh weather bhi display karna poadega, so let's check local storage first
-            //for coordinates, if we haved saved them there.
             getfromSessionStorage();
         }
     }
 }
 
 userTab.addEventListener("click", () => {
-    //pass clicked tab as input paramter
+
     switchTab(userTab);
 });
 
 searchTab.addEventListener("click", () => {
-    //pass clicked tab as input paramter
     switchTab(searchTab);
 });
 
-//check if cordinates are already present in session storage
+
 function getfromSessionStorage() {
     const localCoordinates = sessionStorage.getItem("user-coordinates");
     if(!localCoordinates) {
-        //agar local coordinates nahi mile
+        
         grantAccessContainer.classList.add("active");
     }
     else {
@@ -63,12 +58,10 @@ function getfromSessionStorage() {
 
 async function fetchUserWeatherInfo(coordinates) {
     const {lat, lon} = coordinates;
-    // make grantcontainer invisible
+   
     grantAccessContainer.classList.remove("active");
-    //make loader visible
     loadingScreen.classList.add("active");
 
-    //API CALL
     try {
         const response = await fetch(
             `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
@@ -81,13 +74,12 @@ async function fetchUserWeatherInfo(coordinates) {
     }
     catch(err) {
         loadingScreen.classList.remove("active");
-        alert("Something went wrong. Please try again.");
+        alert(err.message || "Could not fetch weather data. Please try again.");
     }
 
 }
 
-function renderWeatherInfo(weatherInfo) {
-    //fistly, we have to fethc the elements 
+function renderWeatherInfo(weatherInfo) { 
 
     const cityName = document.querySelector("[data-cityName]");
     const countryIcon = document.querySelector("[data-countryIcon]");
@@ -100,7 +92,7 @@ function renderWeatherInfo(weatherInfo) {
 
     console.log(weatherInfo);
 
-    //fetch values from weatherINfo object and put it UI elements
+    
     cityName.innerText = weatherInfo?.name;
     countryIcon.src = `https://flagcdn.com/144x108/${weatherInfo?.sys?.country.toLowerCase()}.png`;
     desc.innerText = weatherInfo?.weather?.[0]?.description;
@@ -115,7 +107,10 @@ function renderWeatherInfo(weatherInfo) {
 
 function getLocation() {
     if(navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition,handleGeoError);
+        navigator.geolocation.getCurrentPosition(showPosition,handleGeoError,{
+            enableHighAccuracy: true,
+            timeout: 10000,
+        });
     }
     else {
         alert("Geolocation is not supported by this browser.");
@@ -177,11 +172,19 @@ async function fetchSearchWeatherInfo(city) {
             `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
           );
         const data = await response.json();
+
+        if (data.cod === "404") {
+            alert("City not found. Please check your spelling.");
+            loadingScreen.classList.remove("active");
+            return;
+        }
+        
         loadingScreen.classList.remove("active");
         userInfoContainer.classList.add("active");
         renderWeatherInfo(data);
     }
     catch(err) {
-        //hW
+        loadingScreen.classList.remove("active");
+        alert("Could not fetch weather data. Please try again.");
     }
 }
